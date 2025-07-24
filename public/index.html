@@ -1,0 +1,56 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>GorgireBoard</title>
+  <link rel="stylesheet" href="style.css" />
+  <script src="/socket.io/socket.io.js"></script>
+</head>
+<body>
+  <div class="container">
+    <h1 class="title">GorgireBoard</h1>
+
+    <div id="chatWindow" class="chat-window"></div>
+
+    <div class="input-row">
+      <input id="messageInput" placeholder="Input message here" />
+      <button id="sendBtn" onclick="sendMessage()">📨</button>
+    </div>
+  </div>
+
+  <script>
+    const socket = io();
+    let nickname = prompt("Enter nickname") || "Anonymous";
+    socket.emit("new-user", nickname);
+
+    socket.on("message", msg => {
+      const chatWindow = document.getElementById("chatWindow");
+      const div = document.createElement("div");
+
+      // Check for system message
+      if (msg.type === "system") {
+        div.className = "system-message";
+        div.textContent = msg.text;
+      } else {
+        const isMine = msg.nickname === nickname;
+        div.className = isMine ? "bubble right" : "bubble left";
+        div.innerHTML = isMine
+          ? `<span>${msg.text}</span>`
+          : `<strong>${msg.nickname}</strong><br><span>${msg.text}</span>`;
+      }
+
+      chatWindow.appendChild(div);
+      chatWindow.scrollTop = chatWindow.scrollHeight;
+    });
+
+    function sendMessage() {
+      const input = document.getElementById("messageInput");
+      const text = input.value.trim();
+      if (!text) return;
+      socket.emit("send-message", { nickname, text });
+      input.value = "";
+    }
+  </script>
+</body>
+</html>
