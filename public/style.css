@@ -1,7 +1,7 @@
 @import url('https://fonts.googleapis.com/css2?family=Segoe+UI:wght@400;700&display=swap');
 
 /* -----------------------------
-   BODY BACKGROUND & BASE
+    BODY BACKGROUND & BASE
 ------------------------------ */
 body {
   margin: 0;
@@ -17,7 +17,7 @@ body {
 }
 
 /* -----------------------------
-   CONTAINER WITH GLASSMORPH
+    CONTAINER WITH GLASSMORPH
 ------------------------------ */
 .container {
   width: 95%;
@@ -36,7 +36,7 @@ body {
 }
 
 /* -----------------------------
-   TITLE
+    TITLE
 ------------------------------ */
 .title {
   text-align: center;
@@ -48,7 +48,7 @@ body {
 }
 
 /* -----------------------------
-   CHAT WINDOW
+    CHAT WINDOW
 ------------------------------ */
 .chat-window {
   flex-grow: 1;
@@ -59,9 +59,9 @@ body {
   background: rgba(255, 255, 255, 0.03);
   display: flex;
   flex-direction: column;
-  gap: 10px;
+  gap: 4px; /* Reduced gap for chained messages */
   scroll-behavior: smooth;
-
+  
   /* Fade effect for top/bottom edges */
   -webkit-mask-image: linear-gradient(to bottom, transparent 0%, black 8%, black 92%, transparent 100%);
   mask-image: linear-gradient(to bottom, transparent 0%, black 8%, black 92%, transparent 100%);
@@ -82,14 +82,50 @@ body {
 }
 
 /* -----------------------------
-   CHAT BUBBLES
+    CHAT BUBBLES
 ------------------------------ */
+.message-group {
+  display: flex;
+  flex-direction: column;
+  max-width: 80%; /* Fixed: Set max width on the group container */
+  opacity: 0;
+  animation: bounceFadeIn 0.5s forwards;
+  margin-top: 8px;
+}
+
+.message-group.right {
+  align-self: flex-end;
+  align-items: flex-end;
+}
+
+.message-group.left {
+  align-self: flex-start;
+  align-items: flex-start;
+}
+
+.message-group + .message-group {
+  margin-top: 4px;
+}
+
+.name-tag {
+  color: white;
+  font-weight: 700;
+  font-size: 0.9rem;
+  margin-bottom: 4px;
+}
+
+.user-id {
+  color: #aaa;
+  font-weight: 400;
+  font-size: 0.8rem;
+  margin-left: 4px;
+}
+
 .bubble {
-  max-width: 80%;
   padding: 10px 14px;
   border-radius: 14px;
   backdrop-filter: blur(6px);
-    background: linear-gradient(
+  background: linear-gradient(
     145deg,
     rgba(255, 255, 255, 0.15),
     rgba(255, 255, 255, 0.05)
@@ -97,8 +133,6 @@ body {
   color: white;
   word-wrap: break-word;
   box-shadow: 0 2px 12px rgba(0,0,0,0.3);
-  opacity: 0;
-  animation: bounceFadeIn 0.5s forwards;
   transition: background 0.3s ease;
 }
 
@@ -106,20 +140,23 @@ body {
   background: rgba(255, 255, 255, 0.2);
 }
 
-/* Right-aligned (your message) */
-.bubble.right {
-  align-self: flex-end;
+.message-group.right .bubble {
   background: rgba(0, 255, 255, 0.18);
 }
 
-/* Left-aligned (others' message) */
-.bubble.left {
-  align-self: flex-start;
+.message-group.left .bubble {
   background: rgba(200, 200, 200, 0.12);
 }
 
+.chat-image {
+  max-width: 200px;
+  max-height: 200px;
+  display: block;
+  border-radius: 8px;
+}
+
 /* -----------------------------
-   SYSTEM MESSAGES
+    SYSTEM MESSAGES
 ------------------------------ */
 .system-message {
   text-align: center;
@@ -132,7 +169,7 @@ body {
 }
 
 /* -----------------------------
-   INPUT ROW
+    INPUT ROW
 ------------------------------ */
 .input-row {
   display: flex;
@@ -175,9 +212,104 @@ body {
 #sendBtn:hover {
   background: rgba(0, 255, 255, 0.3);
 }
+/* -----------------------------
+    CUSTOM FILE INPUT BUTTON
+------------------------------ */
+.custom-file-button {
+  background: rgba(255, 255, 255, 0.08);
+  border: none;
+  padding: 10px 14px;
+  border-radius: 12px;
+  cursor: pointer;
+  color: white;
+  transition: background 0.3s ease, transform 0.2s ease, box-shadow 0.3s ease;
+  font-size: 1.2rem;
+  line-height: 1;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+/* -----------------------------
+    FILE NAME DISPLAY
+------------------------------ */
+#fileNameDisplay {
+  color: #ccc;
+  font-size: 0.9rem;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  max-width: 120px; /* Adjust this value as needed */
+  flex-shrink: 0;
+}
+/* -----------------------------
+    IMAGE PREVIEW IN INPUT BAR
+------------------------------ */
+#imagePreview {
+  max-width: 80px;
+  max-height: 80px;
+  border-radius: 8px;
+  object-fit: cover;
+  flex-shrink: 0;
+  transition: transform 0.2s ease;
+  box-shadow: 0 0 8px rgba(0,0,0,0.4);
+}
+
+#imagePreview:hover {
+  transform: scale(1.1);
+}
+
+.custom-file-button:hover {
+  background: rgba(255, 255, 255, 0.12);
+  transform: scale(1.05);
+}
+
+.custom-file-button:active {
+  transform: scale(0.96);
+  animation: bounceClick 0.3s ease-out;
+}
+/* -----------------------------
+    IMAGE PREVIEW & CANCEL BUTTON
+------------------------------ */
+#previewContainer {
+  position: relative;
+  display: none; /* We will show this with JS */
+  flex-shrink: 0;
+}
+
+#imagePreview {
+  max-width: 80px;
+  max-height: 80px;
+  border-radius: 8px;
+  object-fit: cover;
+  display: block; /* The container will handle the display */
+  box-shadow: 0 0 8px rgba(0, 0, 0, 0.4);
+}
+
+#clearImageBtn {
+  position: absolute;
+  top: -8px;
+  right: -8px;
+  background: rgba(255, 0, 0, 0.7);
+  border: 1px solid rgba(255, 255, 255, 0.2);
+  border-radius: 50%;
+  width: 24px;
+  height: 24px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  color: white;
+  font-size: 0.8rem;
+  line-height: 1;
+  transition: background 0.2s ease, transform 0.2s ease;
+}
+#clearImageBtn:hover {
+  background: rgba(255, 0, 0, 1);
+  transform: scale(1.1);
+}
 
 /* -----------------------------
-   ANIMATIONS
+    ANIMATIONS
 ------------------------------ */
 @keyframes bounceFadeIn {
   0% { opacity: 0; transform: translateY(20px) scale(0.95); }
@@ -198,7 +330,7 @@ body {
   100% { transform: scale(1); }
 }
 /* -----------------------------
-   TRANSITIONS — INPUT FIELD
+    TRANSITIONS — INPUT FIELD
 ------------------------------ */
 #messageInput {
   transition:
@@ -218,7 +350,7 @@ body {
 }
 
 /* -----------------------------
-   TRANSITIONS — SEND BUTTON
+    TRANSITIONS — SEND BUTTON
 ------------------------------ */
 #sendBtn {
   transition:

@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>GorgireBoard</title>
+  <title>GorgireBoard | Rand()</title>
   <link rel="stylesheet" href="style.css" />
   <script src="/socket.io/socket.io.js"></script>
 </head>
@@ -14,43 +14,252 @@
     <div id="chatWindow" class="chat-window"></div>
 
     <div class="input-row">
-      <input id="messageInput" placeholder="Input message here" />
-      <button id="sendBtn" onclick="sendMessage()">📨</button>
+      <input id="messageInput" placeholder="Input message here..." />
+      <label for="imageInput" id="imageInputLabel" class="custom-file-button">+</label>
+      <input type="file" id="imageInput" accept="image/*" style="display: none;" />
+      <div id="previewContainer" class="preview-container">
+        <img id="imagePreview" class="image-preview" src="#" alt="Image Preview">
+         <div class="preview-controls">
+          <button id="clearImageBtn">❌</button>
+        </div>
+      </div>
+      <button id="sendBtn" type="button" onclick="sendMessage()">>></button>
     </div>
   </div>
 
-  <script>
-    const socket = io();
-    let nickname = prompt("Enter nickname") || "Anonymous";
-    socket.emit("new-user", nickname);
+<script>
+  const socket = io();
+  let nickname;
+  let name = prompt("Enter nickname") || "Anonymous";
+  socket.emit("new-user", name);
 
-    socket.on("message", msg => {
-      const chatWindow = document.getElementById("chatWindow");
-      const div = document.createElement("div");
+  let lastSenderNickname = null;
 
-      // Check for system message
-      if (msg.type === "system") {
-        div.className = "system-message";
-        div.textContent = msg.text;
-      } else {
-        const isMine = msg.nickname === nickname;
-        div.className = isMine ? "bubble right" : "bubble left";
-        div.innerHTML = isMine
-          ? `<span>${msg.text}</span>`
-          : `<strong>${msg.nickname}</strong><br><span>${msg.text}</span>`;
+  socket.on("your-nickname", serverNickname => {
+    nickname = serverNickname;
+  });
+
+  const input = document.getElementById("messageInput");
+  const imageInput = document.getElementById("imageInput");
+  const previewContainer = document.getElementById("previewContainer");
+  const imagePreview = document.getElementById("imagePreview");
+  const clearImageBtn = document.getElementById("clearImageBtn");
+  const chatWindow = document.getElementById("chatWindow");
+  const container = document.querySelector(".container"); // Get the main container
+
+  const resetImageInput = () => {
+    imageInput.value = "";
+    imagePreview.src = "#";
+    previewContainer.style.display = "none";
+  };
+
+  // Helper function to process a file from paste or drag-drop
+  const handleImageFile = (file) => {
+    // Make sure it's an image file
+    if (!file || !file.type.startsWith("image/")) {
+      return;
+    }
+
+    // This is a neat trick to put the file into the file input field
+    const dataTransfer = new DataTransfer();
+    dataTransfer.items.add(file);
+    imageInput.files = dataTransfer.files;
+
+    // Trigger the preview to show the image
+    const fileURL = URL.createObjectURL(file);
+    imagePreview.src = fileURL;
+    previewContainer.style.display = "flex";
+  };
+
+  imageInput.addEventListener("change", () => {
+    const file = imageInput.files[0];
+    if (file) {
+      const fileURL = URL.createObjectURL(file);
+      imagePreview.src = fileURL;
+      previewContainer.style.display = "flex";
+    } else {
+      resetImageInput();
+    }
+  });
+
+  clearImageBtn.addEventListener("click", () => {
+    resetImageInput();
+  });
+
+  socket.on("message", msg => {
+    console.log("Received:", msg);
+
+    const isMine = msg.nickname === nickname;
+    
+    const messageGroup = document.createElement("div");
+    messageGroup.className = "message-group";
+    messageGroup.classList.add(isMine ? "right" : "left");
+
+    if (msg.type === "chat" && msg.nickname !== lastSenderNickname) {
+      const nameTag = document.createElement("div");
+      nameTag.className = "name-tag";
+
+      const [namePartText, idPartText] = msg.nickname.split('#');
+
+      const namePart = document.createElement("span");
+      namePart.textContent = namePartText;
+      nameTag.appendChild(namePart);
+
+      const idPart = document.createElement("span");
+      idPart.className = "user-id";
+      idPart.textContent = `#${idPartText}`;
+      nameTag.appendChild(idPart);
+
+      messageGroup.appendChild(nameTag);
+    }
+
+    const bubble = document.createElement("div");
+    bubble.className = "bubble";
+
+    if (msg.type === "system") {
+      messageGroup.className = "system-message";
+      messageGroup.textContent = msg.text;
+      
+    } else {
+      if (msg.text) {
+        const span = document.createElement("span");
+        span.textContent = msg.text;
+        bubble.appendChild(span);
       }
 
-      chatWindow.appendChild(div);
-      chatWindow.scrollTop = chatWindow.scrollHeight;
-    });
+      if (msg.image) {
+        const img = document.createElement("img");
+        img.src = msg.image;
+        img.className = "chat-image";
+        bubble.appendChild(img);
+      }
+      messageGroup.appendChild(bubble);
+    }
+    
+    chatWindow.appendChild(messageGroup);
+    chatWindow.scrollTop = chatWindow.scrollHeight;
 
-    function sendMessage() {
-      const input = document.getElementById("messageInput");
-      const text = input.value.trim();
-      if (!text) return;
-      socket.emit("send-message", { nickname, text });
+    if (msg.type === "chat") {
+      lastSenderNickname = msg.nickname;
+    } else {
+      lastSenderNickname = null;
+    }
+  });
+
+  function sendMessage() {
+    const text = input.value.trim();
+    const file = imageInput.files[0];
+
+    if (!text && !file) {
+      return;
+    }
+
+    if (file) {
+      const reader = new FileReader();
+      reader.onload = () => {
+        const img = new Image();
+        img.src = reader.result;
+        img.onload = () => {
+          const canvas = document.createElement('canvas');
+          const ctx = canvas.getContext('2d');
+          const MAX_WIDTH = 800;
+          const MAX_HEIGHT = 600;
+          let width = img.width;
+          let height = img.height;
+
+          if (width > height) {
+            if (width > MAX_WIDTH) {
+              height *= MAX_WIDTH / width;
+              width = MAX_WIDTH;
+            }
+          } else {
+            if (height > MAX_HEIGHT) {
+              width *= MAX_HEIGHT / height;
+              height = MAX_HEIGHT;
+            }
+          }
+
+          canvas.width = width;
+          canvas.height = height;
+          ctx.drawImage(img, 0, 0, width, height);
+          const compressedDataUrl = canvas.toDataURL('image/jpeg', 0.7);
+
+          socket.emit("send-message", {
+            text: text || "",
+            image: compressedDataUrl
+          });
+          input.value = "";
+          resetImageInput();
+        };
+      };
+      reader.onerror = err => {
+        console.error("FileReader error:", err);
+      };
+      reader.readAsDataURL(file);
+    } else {
+      socket.emit("send-message", {
+        text,
+        image: null
+      });
       input.value = "";
     }
-  </script>
+  }
+
+  // --- EXISTING KEYBOARD LOGIC ---
+  input.addEventListener("keydown", (event) => {
+    if (event.key === "Enter" && !event.shiftKey) {
+      event.preventDefault();
+      sendMessage();
+    }
+  });
+
+  document.addEventListener("keydown", (event) => {
+    if (event.ctrlKey && event.key === "e") {
+      event.preventDefault();
+      imageInput.click();
+    }
+  });
+
+  // --- NEW PASTE & DRAG-DROP LOGIC ---
+  // Pasting an image from clipboard
+  document.addEventListener("paste", (event) => {
+    // Check if the clipboard data has a file
+    const items = (event.clipboardData || event.originalEvent.clipboardData).items;
+    for (const item of items) {
+      if (item.kind === "file") {
+        // Read the file and handle it
+        const file = item.getAsFile();
+        handleImageFile(file);
+        break; // Stop after finding the first file
+      }
+    }
+  });
+
+  // Drag-and-Drop functionality
+  // Highlight the container on dragover
+  container.addEventListener("dragover", (event) => {
+    event.preventDefault(); // This is crucial for drag-drop to work
+    container.classList.add("dragover");
+  });
+
+  // Remove the highlight when the drag leaves
+  container.addEventListener("dragleave", (event) => {
+    event.preventDefault();
+    container.classList.remove("dragover");
+  });
+
+  // Handle the dropped file
+  container.addEventListener("drop", (event) => {
+    event.preventDefault();
+    container.classList.remove("dragover");
+
+    // Check if a file was dropped
+    if (event.dataTransfer.files.length > 0) {
+      const file = event.dataTransfer.files[0];
+      handleImageFile(file);
+    }
+  });
+</script>
+
 </body>
 </html>
