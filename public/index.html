@@ -1,96 +1,453 @@
 <!DOCTYPE html>
 <html lang="en">
+
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <title>GorgireBoard | Rand()</title>
-  <link rel="stylesheet" href="style.css" />
+  <link rel="icon" type="image/png" href="favicon.png">
+  <link rel="stylesheet" href="main.css" />
+  <link id="forest-style" rel="stylesheet" href="_forest-style.css" />
+  <link id="ocean-style" rel="preload" as="style" href="_ocean-style.css" />
+  <link id="galaxy-style" rel="preload" as="style" href="_galaxy-style.css" />
+  <link id="gemini-style" rel="preload" as="style" href="_gemini-style.css" />
   <script src="/socket.io/socket.io.js"></script>
 </head>
+
 <body>
+  <div id="theme-transition-overlay"></div>
+
+  <!-- Landing screen -->
+  <div id="landingScreen">
+    <div id="splashContent">
+      <h1 id="appName">GorgireBoard</h1>
+    </div>
+    <div id="inputArea">
+      <input id="nicknameInput" type="text" placeholder="Choose a nickname..." />
+      <button id="joinBtn" disabled>Join Chat</button>
+    </div>
+  </div>
+
+  <!-- Chat interface -->
+  <div class="ad-container ad-left"></div>
   <div class="container">
     <h1 class="title">GorgireBoard</h1>
+
+    <div id="themeButtons">
+      <button onclick="setThemeWithTransition('forest')">🌲</button>
+      <button onclick="setThemeWithTransition('ocean')">🌊</button>
+      <button onclick="setThemeWithTransition('galaxy')">🌌</button>
+      <button onclick="setThemeWithTransition('gemini')">✨</button>
+    </div>
 
     <div id="chatWindow" class="chat-window"></div>
 
     <div class="input-row">
-      <input id="messageInput" placeholder="Input message here..." />
+      <textarea id="messageInput" placeholder="Input message here..."></textarea>
       <label for="imageInput" id="imageInputLabel" class="custom-file-button">+</label>
       <input type="file" id="imageInput" accept="image/*" style="display: none;" />
       <div id="previewContainer" class="preview-container">
         <img id="imagePreview" class="image-preview" src="#" alt="Image Preview">
-         <div class="preview-controls">
-          <button id="clearImageBtn">❌</button>
+        <div class="preview-controls">
+          <button id="clearImageBtn">×</button>
         </div>
       </div>
       <button id="sendBtn" type="button" onclick="sendMessage()">>></button>
     </div>
   </div>
+  <div class="ad-container ad-right"></div>
+  <div id="imageModal">
+    <div id="modalBackdrop"></div>
+    <img id="modalImage" src="" />
+  </div>
+
+</body>
+
+<div id="blockModal" class="fixed inset-0 z-[999] flex items-center justify-center hidden">
+  <div class="bg-gray-800 bg-opacity-70 backdrop-blur-md rounded-2xl shadow-lg p-6 max-w-sm w-full text-center">
+    <p class="text-white text-lg font-semibold mb-4">You're sending messages too quickly! Please slow down.</p>
+    <button id="modalCloseBtn"
+      class="bg-blue-500 hover:bg-blue-600 text-white font-bold py-2 px-4 rounded-lg transition-colors">OK</button>
+  </div>
+</div>
 
 <script>
+  // ----------------------------------------------------
+  // VARIABLE DECLARATIONS (keep all declarations at the top)
+  // ----------------------------------------------------
   const socket = io();
   let nickname;
-  let name = prompt("Enter nickname") || "Anonymous";
-  socket.emit("new-user", name);
-
   let lastSenderNickname = null;
 
-  socket.on("your-nickname", serverNickname => {
-    nickname = serverNickname;
-  });
-
-  const input = document.getElementById("messageInput");
+  const landingScreen = document.getElementById("landingScreen");
+  const splashContent = document.getElementById("splashContent");
+  const appName = document.getElementById("appName");
+  const inputArea = document.getElementById("inputArea");
+  const nicknameInput = document.getElementById("nicknameInput");
+  const joinBtn = document.getElementById("joinBtn");
+  const mainContainer = document.querySelector(".container");
+  const chatWindow = document.getElementById("chatWindow");
+  const messageInput = document.getElementById('messageInput');
   const imageInput = document.getElementById("imageInput");
   const previewContainer = document.getElementById("previewContainer");
   const imagePreview = document.getElementById("imagePreview");
   const clearImageBtn = document.getElementById("clearImageBtn");
-  const chatWindow = document.getElementById("chatWindow");
-  const container = document.querySelector(".container"); // Get the main container
+  const container = document.querySelector(".container");
+
+  let currentImageFile = null;
+
+  const blockModal = document.getElementById("blockModal");
+  const modalCloseBtn = document.getElementById("modalCloseBtn");
+
+  const imageModal = document.getElementById("imageModal");
+  const modalBackdrop = document.getElementById("modalBackdrop");
+  const modalImage = document.getElementById("modalImage");
+
+  let originRect = null;
+  let originImg = null;
+
+  let lastSentTimestamp = 0;
+  let fastMessageCount = 0;
+  const COOLDOWN_PERIOD = 2000;
+
+  // ----------------------------------------------------
+  // FUNCTION DECLARATIONS
+  // ----------------------------------------------------
+
+  // This function applies a theme directly without a transition
+  function setTheme(theme) {
+    // Find all theme link tags
+    const themeLinks = document.querySelectorAll('link[id$="-style"]');
+
+    // Loop through and disable all of them
+    themeLinks.forEach(link => {
+      link.rel = 'preload';
+    });
+
+    // Find the specific link for the new theme and enable it
+    const newThemeLink = document.getElementById(theme + '-style');
+    if (newThemeLink) {
+      newThemeLink.rel = 'stylesheet';
+    }
+
+    // Update the CSS variable for the overlay to match the new theme
+    const newBgColor = getComputedStyle(document.documentElement).getPropertyValue('--background-color');
+    document.documentElement.style.setProperty('--background-color', newBgColor);
+
+    // Save the new theme to localStorage
+    localStorage.setItem('theme', theme);
+  }
+
+  // This function applies a theme with a smooth transition
+  function setThemeWithTransition(theme) {
+    const currentSavedTheme = localStorage.getItem('theme');
+
+    // Only apply the transition if the theme is actually changing
+    if (currentSavedTheme !== theme) {
+      const overlay = document.getElementById('theme-transition-overlay');
+      overlay.classList.add('active');
+
+      // Wait for the fade-in before we change the CSS
+      setTimeout(() => {
+        setTheme(theme); // Call the core function to do the work
+        overlay.classList.remove('active'); // Fade the overlay back out
+      }, 300); // This delay should match your CSS transition time
+    }
+  }
+
+  // Modal functions
+  const showModal = () => {
+    // Only show the modal if the user has a nickname
+    if (nickname) {
+      blockModal.style.display = "flex";
+      messageInput.disabled = true;
+    }
+  };
+
+  const closeModal = () => {
+    blockModal.style.display = "none";
+    messageInput.disabled = false;
+    messageInput.focus();
+  };
+
+  function openImageModal(src, originElement) {
+    originImg = originElement;
+    originRect = originElement.getBoundingClientRect();
+
+    originImg.classList.add("hidden-thumbnail");
+
+    modalImage.src = src;
+
+    modalBackdrop.style.backdropFilter = "blur(0px)";
+    modalBackdrop.style.opacity = "0";
+    modalImage.style.transition = "none";
+
+    // Set initial position and size
+    modalImage.style.position = 'fixed';
+    modalImage.style.top = `${originRect.top}px`;
+    modalImage.style.left = `${originRect.left}px`;
+    modalImage.style.width = `${originRect.width}px`;
+    modalImage.style.height = `${originRect.height}px`;
+    modalImage.style.transform = "translate(0, 0)";
+
+    imageModal.style.display = "block";
+    imageModal.style.pointerEvents = "auto"; // <-- NEW: Makes the modal clickable
+
+    requestAnimationFrame(() => {
+      modalImage.style.transition = "all 0.6s cubic-bezier(0.33, 1.2, 0.68, 1)";
+      modalBackdrop.style.backdropFilter = "blur(16px)";
+      modalBackdrop.style.opacity = "1";
+
+      const vw = window.innerWidth;
+      const vh = window.innerHeight;
+
+      const maxWidth = vw * 0.9;
+      const maxHeight = vh * 0.9;
+
+      const img = new Image();
+      img.src = src;
+      img.onload = () => {
+        const aspect = img.width / img.height;
+
+        let targetWidth = maxWidth;
+        let targetHeight = maxWidth / aspect;
+
+        if (targetHeight > maxHeight) {
+          targetHeight = maxHeight;
+          targetWidth = maxHeight * aspect;
+        }
+
+        modalImage.style.top = `50%`;
+        modalImage.style.left = `50%`;
+        modalImage.style.width = `${targetWidth}px`;
+        modalImage.style.height = `${targetHeight}px`;
+        modalImage.style.transform = `translate(-50%, -50%)`;
+      };
+    });
+  }
+
+  function closeImageModal() {
+    imageModal.style.pointerEvents = "none"; // <-- NEW: Makes the modal un-clickable again
+
+    if (originImg && originRect) {
+      modalBackdrop.style.backdropFilter = "blur(0px)";
+      modalBackdrop.style.opacity = "0";
+
+      modalImage.style.width = `${originRect.width}px`;
+      modalImage.style.height = `${originRect.height}px`;
+      modalImage.style.top = `${originRect.top}px`;
+      modalImage.style.left = `${originRect.left}px`;
+      modalImage.style.transform = "translate(0, 0)";
+
+      // Wait for the animation to end before hiding the modal
+      setTimeout(() => {
+        imageModal.style.display = "none";
+        originImg.classList.remove("hidden-thumbnail");
+        originImg = null;
+        originRect = null;
+      }, 600); // Must match transition time
+    } else {
+      // If there's no origin image, just close the modal immediately
+      imageModal.style.display = "none";
+    }
+  }
+
+  const joinChat = () => {
+    const name = nicknameInput.value.trim();
+    if (name) {
+      socket.emit("new-user", name);
+      landingScreen.classList.add("fade-out");
+      landingScreen.addEventListener("transitionend", () => {
+        landingScreen.remove();
+        mainContainer.style.display = "flex";
+        setTimeout(() => {
+          mainContainer.style.opacity = 1;
+          mainContainer.style.filter = 'blur(0px)';
+        }, 50);
+      }, { once: true });
+    }
+  };
 
   const resetImageInput = () => {
     imageInput.value = "";
     imagePreview.src = "#";
     previewContainer.style.display = "none";
+    currentImageFile = null;
   };
 
-  // Helper function to process a file from paste or drag-drop
   const handleImageFile = (file) => {
-    // Make sure it's an image file
-    if (!file || !file.type.startsWith("image/")) {
-      return;
-    }
-
-    // This is a neat trick to put the file into the file input field
-    const dataTransfer = new DataTransfer();
-    dataTransfer.items.add(file);
-    imageInput.files = dataTransfer.files;
-
-    // Trigger the preview to show the image
+    if (!file || !file.type.startsWith("image/")) return;
+    currentImageFile = file;
     const fileURL = URL.createObjectURL(file);
     imagePreview.src = fileURL;
     previewContainer.style.display = "flex";
   };
 
+  function sendMessage() {
+    const text = messageInput.value.trim();
+    const fileToSend = currentImageFile || imageInput.files[0];
+    if (!text && !fileToSend) return;
+
+    const currentTime = Date.now();
+    if (currentTime - lastSentTimestamp < COOLDOWN_PERIOD) {
+      fastMessageCount++;
+      if (fastMessageCount >= 10) {
+        showModal();
+        return;
+      }
+    } else {
+      fastMessageCount = 0;
+    }
+
+    if (fileToSend) {
+      const reader = new FileReader();
+      reader.onload = () => {
+        const img = new Image();
+        img.src = reader.result;
+        img.onload = () => {
+          const canvas = document.createElement('canvas');
+          const ctx = canvas.getContext('2d');
+          const MAX_WIDTH = 800;
+          const MAX_HEIGHT = 600;
+          let width = img.width;
+          let height = img.height;
+
+          if (width > height && width > MAX_WIDTH) {
+            height *= MAX_WIDTH / width;
+            width = MAX_WIDTH;
+          } else if (height > MAX_HEIGHT) {
+            width *= MAX_HEIGHT / height;
+            height = MAX_HEIGHT;
+          }
+
+          canvas.width = width;
+          canvas.height = height;
+          ctx.drawImage(img, 0, 0, width, height);
+          const compressedDataUrl = canvas.toDataURL('image/jpeg', 0.7);
+
+          socket.emit("send-message", {
+            text: text || "",
+            image: compressedDataUrl
+          });
+
+          messageInput.value = "";
+          messageInput.style.height = 'auto';
+          resetImageInput();
+          lastSentTimestamp = currentTime;
+        };
+      };
+      reader.readAsDataURL(fileToSend);
+    } else {
+      socket.emit("send-message", {
+        text,
+        image: null
+      });
+      messageInput.value = "";
+      messageInput.style.height = 'auto';
+      lastSentTimestamp = currentTime;
+    }
+  }
+
+  // ----------------------------------------------------
+  // EVENT LISTENERS
+  // ----------------------------------------------------
+  document.addEventListener('DOMContentLoaded', () => {
+    const savedTheme = localStorage.getItem('theme') || 'forest';
+    setTheme(savedTheme);
+
+    appName.style.opacity = "1";
+    setTimeout(() => {
+      splashContent.classList.add("moved-up");
+      setTimeout(() => {
+        inputArea.classList.add("visible");
+        nicknameInput.focus();
+      }, 800);
+    }, 1200);
+  });
+
+  joinBtn.addEventListener("click", joinChat);
+  nicknameInput.addEventListener("input", () => {
+    joinBtn.disabled = nicknameInput.value.trim() === "";
+  });
+  nicknameInput.addEventListener("keydown", (event) => {
+    if (event.key === "Enter" && !joinBtn.disabled) {
+      joinChat();
+    }
+  });
+  modalCloseBtn.addEventListener("click", closeModal);
+
   imageInput.addEventListener("change", () => {
     const file = imageInput.files[0];
-    if (file) {
-      const fileURL = URL.createObjectURL(file);
-      imagePreview.src = fileURL;
-      previewContainer.style.display = "flex";
-    } else {
-      resetImageInput();
+    if (file) handleImageFile(file);
+    else resetImageInput();
+  });
+
+  clearImageBtn.addEventListener("click", resetImageInput);
+
+  messageInput.addEventListener("keydown", (event) => {
+    if (event.key === "Enter" && !event.shiftKey) {
+      event.preventDefault();
+      sendMessage();
     }
   });
 
-  clearImageBtn.addEventListener("click", () => {
-    resetImageInput();
+  document.addEventListener("keydown", (event) => {
+    if (event.ctrlKey && event.key === "e") {
+      event.preventDefault();
+      imageInput.click();
+    }
+  });
+
+  document.addEventListener("paste", (event) => {
+    const items = (event.clipboardData || event.originalEvent.clipboardData).items;
+    for (const item of items) {
+      if (item.kind === "file") {
+        handleImageFile(item.getAsFile());
+        break;
+      }
+    }
+  });
+
+  container.addEventListener("dragover", (event) => {
+    event.preventDefault();
+    container.classList.add("dragover");
+  });
+
+  container.addEventListener("dragleave", (event) => {
+    event.preventDefault();
+    container.classList.remove("dragover");
+  });
+
+  container.addEventListener("drop", (event) => {
+    event.preventDefault();
+    container.classList.remove("dragover");
+    if (event.dataTransfer.files.length > 0) {
+      handleImageFile(event.dataTransfer.files[0]);
+    }
+  });
+
+  messageInput.addEventListener('input', () => {
+    messageInput.style.height = 'auto';
+    messageInput.style.height = messageInput.scrollHeight + 'px';
+  });
+
+  imageModal.addEventListener("click", (event) => {
+    // Close the modal if the click is on the parent container OR the backdrop,
+    // but NOT if it's on the image itself.
+    if (event.target === imageModal || event.target === modalBackdrop) {
+      closeImageModal();
+    }
+  });
+
+  // ----------------------------------------------------
+  // SOCKET.IO EVENT HANDLERS
+  // ----------------------------------------------------
+  socket.on("your-nickname", serverNickname => {
+    nickname = serverNickname;
   });
 
   socket.on("message", msg => {
-    console.log("Received:", msg);
-
     const isMine = msg.nickname === nickname;
-    
     const messageGroup = document.createElement("div");
     messageGroup.className = "message-group";
     messageGroup.classList.add(isMine ? "right" : "left");
@@ -100,7 +457,6 @@
       nameTag.className = "name-tag";
 
       const [namePartText, idPartText] = msg.nickname.split('#');
-
       const namePart = document.createElement("span");
       namePart.textContent = namePartText;
       nameTag.appendChild(namePart);
@@ -119,147 +475,42 @@
     if (msg.type === "system") {
       messageGroup.className = "system-message";
       messageGroup.textContent = msg.text;
-      
     } else {
       if (msg.text) {
         const span = document.createElement("span");
         span.textContent = msg.text;
         bubble.appendChild(span);
       }
-
       if (msg.image) {
         const img = document.createElement("img");
         img.src = msg.image;
         img.className = "chat-image";
+        img.style.cursor = "pointer";
+        img.addEventListener("click", (event) => {
+          openImageModal(img.src, img);
+          event.stopPropagation(); // Prevents the modal from closing immediately
+        });
+
         bubble.appendChild(img);
       }
       messageGroup.appendChild(bubble);
     }
-    
+
+    // Force a reflow before adding the animation class
     chatWindow.appendChild(messageGroup);
+    messageGroup.offsetHeight;
+    messageGroup.classList.add('animated');
+
     chatWindow.scrollTop = chatWindow.scrollHeight;
-
-    if (msg.type === "chat") {
-      lastSenderNickname = msg.nickname;
-    } else {
-      lastSenderNickname = null;
-    }
+    lastSenderNickname = msg.type === "chat" ? msg.nickname : null;
   });
 
-  function sendMessage() {
-    const text = input.value.trim();
-    const file = imageInput.files[0];
-
-    if (!text && !file) {
-      return;
+  socket.on("rate-limit", (message) => {
+    // Only show the modal if the user has already joined the chat
+    if (nickname) {
+      showModal();
     }
-
-    if (file) {
-      const reader = new FileReader();
-      reader.onload = () => {
-        const img = new Image();
-        img.src = reader.result;
-        img.onload = () => {
-          const canvas = document.createElement('canvas');
-          const ctx = canvas.getContext('2d');
-          const MAX_WIDTH = 800;
-          const MAX_HEIGHT = 600;
-          let width = img.width;
-          let height = img.height;
-
-          if (width > height) {
-            if (width > MAX_WIDTH) {
-              height *= MAX_WIDTH / width;
-              width = MAX_WIDTH;
-            }
-          } else {
-            if (height > MAX_HEIGHT) {
-              width *= MAX_HEIGHT / height;
-              height = MAX_HEIGHT;
-            }
-          }
-
-          canvas.width = width;
-          canvas.height = height;
-          ctx.drawImage(img, 0, 0, width, height);
-          const compressedDataUrl = canvas.toDataURL('image/jpeg', 0.7);
-
-          socket.emit("send-message", {
-            text: text || "",
-            image: compressedDataUrl
-          });
-          input.value = "";
-          resetImageInput();
-        };
-      };
-      reader.onerror = err => {
-        console.error("FileReader error:", err);
-      };
-      reader.readAsDataURL(file);
-    } else {
-      socket.emit("send-message", {
-        text,
-        image: null
-      });
-      input.value = "";
-    }
-  }
-
-  // --- EXISTING KEYBOARD LOGIC ---
-  input.addEventListener("keydown", (event) => {
-    if (event.key === "Enter" && !event.shiftKey) {
-      event.preventDefault();
-      sendMessage();
-    }
-  });
-
-  document.addEventListener("keydown", (event) => {
-    if (event.ctrlKey && event.key === "e") {
-      event.preventDefault();
-      imageInput.click();
-    }
-  });
-
-  // --- NEW PASTE & DRAG-DROP LOGIC ---
-  // Pasting an image from clipboard
-  document.addEventListener("paste", (event) => {
-    // Check if the clipboard data has a file
-    const items = (event.clipboardData || event.originalEvent.clipboardData).items;
-    for (const item of items) {
-      if (item.kind === "file") {
-        // Read the file and handle it
-        const file = item.getAsFile();
-        handleImageFile(file);
-        break; // Stop after finding the first file
-      }
-    }
-  });
-
-  // Drag-and-Drop functionality
-  // Highlight the container on dragover
-  container.addEventListener("dragover", (event) => {
-    event.preventDefault(); // This is crucial for drag-drop to work
-    container.classList.add("dragover");
-  });
-
-  // Remove the highlight when the drag leaves
-  container.addEventListener("dragleave", (event) => {
-    event.preventDefault();
-    container.classList.remove("dragover");
-  });
-
-  // Handle the dropped file
-  container.addEventListener("drop", (event) => {
-    event.preventDefault();
-    container.classList.remove("dragover");
-
-    // Check if a file was dropped
-    if (event.dataTransfer.files.length > 0) {
-      const file = event.dataTransfer.files[0];
-      handleImageFile(file);
-    }
-  });
-</script>
-
+  });</script>
 </body>
+
 </html>

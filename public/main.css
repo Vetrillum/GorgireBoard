@@ -1,0 +1,634 @@
+/* -----------------------------
+    BODY & BASE LAYOUT
+------------------------------ */
+body {
+    margin: 0;
+    padding: 0;
+    font-family: 'Segoe UI', sans-serif;
+    height: 100vh;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    overflow: hidden;
+}
+
+/* -----------------------------
+    LANDING SCREEN & ANIMATIONS
+------------------------------ */
+#landingScreen {
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    backdrop-filter: blur(18px);
+    -webkit-backdrop-filter: blur(18px);
+    z-index: 100;
+    flex-direction: column;
+    transition: all 0.5s ease-in-out;
+}
+
+#landingScreen.fade-out {
+    opacity: 0;
+    filter: blur(18px);
+}
+
+#splashContent {
+    transition: transform 0.8s ease-in-out;
+}
+
+#splashContent.moved-up {
+    transform: translateY(-60px);
+}
+
+#splashContent h1 {
+    text-align: center;
+    font-size: 2.4rem;
+    font-weight: 700;
+    opacity: 0;
+    animation: fadeIn 1s forwards;
+}
+
+#appName {
+    animation-delay: 0.5s;
+}
+
+#inputArea {
+    opacity: 0;
+    visibility: hidden;
+    transition: opacity 0.5s ease, transform 0.5s ease;
+    transform: translateY(20px);
+    display: flex;
+    flex-direction: column;
+    gap: 12px;
+    align-items: center;
+}
+
+#inputArea.visible {
+    opacity: 1;
+    visibility: visible;
+    transform: translateY(0);
+}
+
+#nicknameInput {
+    border: none;
+    border-radius: 12px;
+    font-size: 1rem;
+    outline: none;
+    padding: 10px 14px;
+    width: 250px;
+}
+
+#joinBtn {
+    border: none;
+    padding: 10px 24px;
+    border-radius: 12px;
+    cursor: pointer;
+    transition: background 0.3s ease;
+}
+
+#joinBtn:disabled {
+    cursor: not-allowed;
+    opacity: 0.5;
+}
+
+/* -----------------------------
+    THEME SWAP ANIMATION
+------------------------------ */
+#theme-transition-overlay {
+    position: fixed;
+    /* Stays in the same spot on the screen */
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    background-color: var(--background-color, #111);
+    /* Uses a CSS variable for the theme's color */
+    z-index: 99;
+    /* Place it just below the modals */
+    opacity: 0;
+    pointer-events: none;
+    /* Allows clicks to pass through when it's not active */
+    transition: opacity 0.3s ease;
+    /* Makes the fade effect smooth */
+}
+
+#theme-transition-overlay.active {
+    opacity: 1;
+    /* This will make it visible */
+    pointer-events: all;
+    /* Blocks clicks when active */
+}
+
+/* -----------------------------
+    MAIN APP HIDDEN BY DEFAULT
+------------------------------ */
+.container {
+    width: 95%;
+    max-width: 700px;
+    height: 95vh;
+    padding: 16px 24px;
+    border-radius: 20px;
+    background: rgba(255, 255, 255, 0.06);
+    backdrop-filter: blur(18px);
+    -webkit-backdrop-filter: blur(18px);
+    box-shadow: 0 0 40px rgba(0, 0, 0, 0.6);
+    display: flex;
+    /* Keep this */
+    flex-direction: column;
+    /* Keep this */
+    gap: 12px;
+    /* Keep this */
+    position: relative;
+    /* Keep this */
+    opacity: 0;
+    /* Initially hidden */
+    filter: blur(10px);
+    /* Initial blur */
+    transition: opacity 0.5s ease-in-out, filter 0.5s ease-in-out;
+    /* Smooth transition for opacity and blur */
+}
+
+/* -----------------------------
+    CHAT WINDOW
+------------------------------ */
+.chat-window {
+    flex-grow: 1;
+    height: 100%;
+    overflow-y: auto;
+    padding: 12px;
+    border-radius: 16px;
+    display: flex;
+    flex-direction: column;
+    gap: 4px;
+    scroll-behavior: smooth;
+    -webkit-mask-image: linear-gradient(to bottom, transparent 0%, black 8%, black 92%, transparent 100%);
+    mask-image: linear-gradient(to bottom, transparent 0%, black 8%, black 92%, transparent 100%);
+}
+
+.chat-window::-webkit-scrollbar {
+    width: 8px;
+}
+
+.chat-window::-webkit-scrollbar-thumb {
+    border-radius: 20px;
+    border: 2px solid transparent;
+    background-clip: content-box;
+}
+
+/* -----------------------------
+    CHAT BUBBLES
+------------------------------ */
+.message-group {
+    display: flex;
+    flex-direction: column;
+    max-width: 80%;
+    opacity: 0;
+    animation: bounceFadeIn 0.5s forwards;
+    margin-top: 8px;
+}
+
+.message-group.right {
+    align-self: flex-end;
+    align-items: flex-end;
+}
+
+.message-group.left {
+    align-self: flex-start;
+    align-items: flex-start;
+}
+
+.message-group+.message-group {
+    margin-top: 4px;
+}
+
+.name-tag {
+    font-weight: 700;
+    font-size: 0.9rem;
+    margin-bottom: 4px;
+}
+
+.user-id {
+    font-weight: 400;
+    font-size: 0.8rem;
+    margin-left: 4px;
+}
+
+.bubble {
+    padding: 10px 14px;
+    border-radius: 14px;
+    backdrop-filter: blur(6px);
+    word-wrap: break-word;
+    box-shadow: 0 2px 12px rgba(0, 0, 0, 0.3);
+    transition: background 0.3s ease;
+    white-space: pre-wrap;
+}
+
+.chat-image {
+    max-width: 200px;
+    max-height: 200px;
+    display: block;
+    border-radius: 8px;
+}
+
+/* -----------------------------
+    SYSTEM MESSAGES
+------------------------------ */
+.system-message {
+    text-align: center;
+    font-size: 0.85rem;
+    font-style: normal;
+    opacity: 0.75;
+    animation: fadeInMessage 0.4s ease-in;
+    padding: 4px 0;
+}
+
+/* -----------------------------
+    INPUT ROW
+------------------------------ */
+.input-row {
+    display: flex;
+    gap: 12px;
+    align-items: center;
+}
+
+#messageInput {
+    flex-grow: 1;
+    padding: 6px 14px;
+    border: none;
+    border-radius: 12px;
+    font-size: 1rem;
+    outline: none;
+    line-height: 1.5em;
+    min-height: 1.5em;
+    max-height: 7.5em;
+    overflow-y: hidden;
+    resize: none;
+    box-sizing: border-box;
+    font-family: 'system-ui', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif, 'Apple Color Emoji', 'Segoe UI Emoji', 'Segoe UI Symbol';
+}
+
+#messageInput::-webkit-scrollbar {
+    display: none;
+}
+
+#messageInput {
+    scrollbar-width: none;
+}
+
+#sendBtn {
+    border: none;
+    padding: 10px 14px;
+    border-radius: 12px;
+    cursor: pointer;
+    transition: background 0.3s ease;
+}
+
+/* -----------------------------
+    CUSTOM FILE INPUT BUTTON
+------------------------------ */
+.custom-file-button {
+    border: none;
+    padding: 10px 14px;
+    border-radius: 12px;
+    cursor: pointer;
+    transition: background 0.3s ease, transform 0.2s ease, box-shadow 0.3s ease;
+    font-size: 1.2rem;
+    line-height: 1;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+
+/* -----------------------------
+    IMAGE PREVIEW & CANCEL BUTTON
+------------------------------ */
+#imagePreview {
+    max-width: 80px;
+    max-height: 80px;
+    border-radius: 8px;
+    object-fit: cover;
+    flex-shrink: 0;
+    transition: transform 0.2s ease;
+    box-shadow: 0 0 8px rgba(0, 0, 0, 0.4);
+}
+
+#imagePreview:hover {
+    transform: scale(1.1);
+}
+
+.custom-file-button:hover {
+    transform: scale(1.05);
+}
+
+.custom-file-button:active {
+    transform: scale(0.96);
+    animation: bounceClick 0.3s ease-out;
+}
+
+#previewContainer {
+    position: relative;
+    display: none;
+    flex-shrink: 0;
+}
+
+#clearImageBtn {
+    position: absolute;
+    top: -8px;
+    right: -8px;
+    border: 1px solid rgba(255, 255, 255, 0.2);
+    border-radius: 50%;
+    width: 24px;
+    height: 24px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    cursor: pointer;
+    font-size: 0.8rem;
+    line-height: 1;
+    transition: background 0.2s ease, transform 0.2s ease;
+}
+
+#clearImageBtn:hover {
+    transform: scale(1.1);
+}
+
+/* -----------------------------
+    IMAGE MODAL
+------------------------------ */
+
+/* The main modal container, hidden by default */
+#imageModal {
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    z-index: 200;
+    /* A high z-index to be on top of everything */
+    display: none;
+}
+
+/* The semi-transparent blurred backdrop */
+#modalBackdrop {
+    position: absolute;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    background: rgba(0, 0, 0, 0.5);
+    /* A dark overlay */
+    backdrop-filter: blur(0px);
+    /* Start with no blur */
+    -webkit-backdrop-filter: blur(0px);
+    /* For Safari */
+    opacity: 0;
+    transition: backdrop-filter 0.6s ease-in-out, opacity 0.6s ease-in-out;
+}
+
+/* The enlarged image itself */
+#modalImage {
+    position: fixed;
+    top: 50%;
+    left: 50%;
+    transform: translate(-50%, -50%);
+    /* Centering the image */
+    max-width: 90vw;
+    max-height: 90vh;
+    box-shadow: 0 8px 32px rgba(0, 0, 0, 0.4);
+    border-radius: 14px;
+    /* Rounded corners to match the theme */
+    object-fit: contain;
+    /* Ensures the whole image is visible */
+    cursor: pointer;
+    z-index: 201;
+    /* Above the backdrop */
+}
+
+/* Hides the original thumbnail during the transition */
+.hidden-thumbnail {
+    visibility: hidden;
+    opacity: 0;
+}
+
+
+/* -----------------------------
+    MODAL for rate-limiting
+------------------------------ */
+#blockModal {
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100vw;
+    height: 100vh;
+    background: rgba(0, 0, 0, 0.4);
+    backdrop-filter: blur(12px);
+    -webkit-backdrop-filter: blur(12px);
+    z-index: 999;
+    display: none;
+    /* Hidden by default */
+    justify-content: center;
+    align-items: center;
+}
+
+#blockModal .modal-content {
+    background: rgba(255, 0, 0, 0.342);
+    /* Restored the red background */
+    backdrop-filter: blur(18px);
+    -webkit-backdrop-filter: blur(18px);
+    border-radius: 20px;
+    padding: 24px;
+    box-shadow: 0 0 20px rgba(0, 0, 0, 0.3);
+    max-width: 320px;
+    text-align: center;
+    display: flex;
+    /* Makes the children flexible */
+    flex-direction: column;
+    /* Stacks the children vertically */
+    align-items: center;
+    /* Centers the children horizontally */
+}
+
+#blockModal p {
+    color: white;
+    font-size: 1rem;
+    margin-bottom: 16px;
+}
+
+#modalCloseBtn {
+    border: none;
+    padding: 10px 24px;
+    border-radius: 12px;
+    cursor: pointer;
+    font-size: 1rem;
+    transition: background 0.3s ease;
+    background: rgba(255, 0, 0, 0.7);
+    /* A solid red for the button */
+    color: white;
+}
+
+#modalCloseBtn:hover {
+    background: rgba(255, 0, 0, 1);
+}
+
+#themeButtons {
+    position: absolute;
+    top: 12px;
+    right: 12px;
+    display: flex;
+    gap: 8px;
+}
+
+#themeButtons button {
+    border: none;
+    border-radius: 8px;
+    padding: 6px 12px;
+    cursor: pointer;
+    font-size: 0.9rem;
+    transition: background 0.3s;
+}
+
+/* -----------------------------
+    AD CONTAINERS
+------------------------------ */
+.ad-container {
+    display: none; /* Hide by default on small screens */
+    position: fixed;
+    top: 50%;
+    transform: translateY(-50%);
+    width: 200px; /* Adjust this to your liking! */
+    height: 400px; /* Adjust this too! */
+    border-radius: 12px;
+    padding: 12px;
+    backdrop-filter: blur(10px);
+    -webkit-backdrop-filter: blur(10px);
+    box-shadow: 0 0 20px rgba(0, 0, 0, 0.4);
+    z-index: 10;
+}
+
+.ad-left {
+    left: 12px;
+}
+
+.ad-right {
+    right: 12px;
+}
+
+/* Show the ad containers on larger screens */
+@media (min-width: 1200px) {
+    .ad-container {
+        display: block;
+    }
+}
+
+/* -----------------------------
+    ANIMATIONS
+------------------------------ */
+@keyframes bounceFadeIn {
+    0% {
+        opacity: 0;
+        transform: translateY(20px) scale(0.95);
+    }
+
+    60% {
+        opacity: 1;
+        transform: translateY(-4px) scale(1.03);
+    }
+
+    80% {
+        opacity: 1;
+        transform: translateY(2px) scale(0.98);
+    }
+
+    100% {
+        opacity: 1;
+        transform: translateY(0px) scale(1);
+    }
+}
+
+@keyframes fadeIn {
+    from {
+        opacity: 0;
+    }
+
+    to {
+        opacity: 1;
+    }
+}
+
+@keyframes fadeInMessage {
+    from {
+        opacity: 0;
+        transform: translateY(6px);
+    }
+
+    to {
+        opacity: 1;
+        transform: translateY(0);
+    }
+}
+
+@keyframes bounceClick {
+    0% {
+        transform: scale(1);
+    }
+
+    30% {
+        transform: scale(0.92);
+    }
+
+    60% {
+        transform: scale(1.05);
+    }
+
+    100% {
+        transform: scale(1);
+    }
+}
+
+@keyframes popUp {
+    0% {
+        opacity: 0;
+        transform: scale(0.7);
+    }
+
+    60% {
+        opacity: 1;
+        transform: scale(1.1);
+    }
+
+    100% {
+        opacity: 1;
+        transform: scale(1);
+    }
+}
+
+/* -----------------------------
+    TRANSITIONS
+------------------------------ */
+#messageInput {
+    transition: background 0.3s ease, transform 0.2s ease, box-shadow 0.3s ease;
+}
+
+#messageInput:hover {
+    transform: translateY(-1px);
+}
+
+#messageInput:focus {
+    transform: translateY(0);
+}
+
+#sendBtn {
+    transition: background 0.3s ease, transform 0.2s ease, box-shadow 0.3s ease;
+}
+
+#sendBtn:hover {
+    transform: scale(1.05);
+}
+
+#sendBtn:active {
+    transform: scale(0.96);
+}

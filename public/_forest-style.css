@@ -1,0 +1,160 @@
+:root {
+    --background-color: #042817;
+}
+
+/* Import font if needed for this theme */
+@import url("https://fonts.googleapis.com/css2?family=Segoe+UI:wght@400;700&display=swap");
+
+/* BODY BACKGROUND & BASE */
+body {
+    font-family: 'Segoe UI', sans-serif;
+    background: url('https://wallpaperbat.com/img/975411-teal-color-wallpaper-hd-wallpaper-hd-nature-wallpaper-forest-wallpaper-background-image.jpg') center/cover no-repeat fixed,
+    linear-gradient(135deg, #111, #222);
+}
+
+/* LANDING SCREEN COLORS */
+#landingScreen {
+    background: rgba(255, 255, 255, 0.06);
+}
+
+#splashContent h1 {
+    color: #fff;
+    text-shadow: 0 0 8px rgba(255, 255, 255, 0.25);
+}
+
+#nicknameInput {
+    background: rgba(255, 255, 255, 0.08);
+    backdrop-filter: blur(10px);
+    color: white;
+}
+
+#joinBtn {
+    color: white;
+    background: rgba(0, 255, 255, 0.18);
+}
+
+#joinBtn:hover {
+    background: rgba(0, 255, 255, 0.3);
+}
+
+/* CHAT INTERFACE COLORS */
+.title {
+    color: #fff;
+    text-shadow: 0 0 8px rgba(255, 255, 255, 0.25);
+}
+
+.chat-window {
+    background: rgba(255, 255, 255, 0.03);
+}
+
+.chat-window::-webkit-scrollbar-track {
+    background: transparent;
+}
+.chat-window::-webkit-scrollbar-thumb {
+    background-color: rgba(255, 255, 255, 0.2);
+}
+
+.name-tag {
+    color: white;
+}
+
+.user-id {
+    color: #aaa;
+}
+
+.bubble {
+    background: linear-gradient(145deg, rgba(255, 255, 255, 0.15), rgba(255, 255, 255, 0.05));
+    color: white;
+}
+
+.bubble:hover {
+    background: rgba(255, 255, 255, 0.2);
+}
+
+.message-group.right .bubble {
+    background: rgba(0, 255, 255, 0.18);
+}
+
+.message-group.left .bubble {
+    background: rgba(200, 200, 200, 0.12);
+}
+
+.system-message {
+    color: #ccc;
+}
+
+/* INPUT ROW COLORS */
+#messageInput {
+    background: rgba(255, 255, 255, 0.08);
+    backdrop-filter: blur(10px);
+    color: white;
+}
+#messageInput::placeholder {
+    color: #ccc;
+}
+#messageInput:hover {
+    background: rgba(255, 255, 255, 0.12);
+}
+#messageInput:focus {
+    background: rgba(255, 255, 255, 0.15);
+    box-shadow: 0 0 0 2px rgba(0, 255, 255, 0.18);
+}
+
+#sendBtn {
+    background: rgba(0, 255, 255, 0.18);
+    color: white;
+}
+
+#sendBtn:hover {
+    background: rgba(0, 255, 255, 0.3);
+}
+#sendBtn:active {
+    box-shadow: 0 2px 6px rgba(0, 255, 255, 0.18);
+}
+
+.custom-file-button {
+    background: rgba(255, 255, 255, 0.08);
+    color: white;
+}
+
+.custom-file-button:hover {
+    background: rgba(255, 255, 255, 0.12);
+}
+
+#clearImageBtn {
+    background: rgba(255, 0, 0, 0.7);
+    color: white;
+}
+#clearImageBtn:hover {
+    background: rgba(255, 0, 0, 1);
+}
+
+/* MODAL COLORS */
+.modal-overlay {
+    background: rgba(0, 0, 0, 0.418);
+}
+
+.modal-content {
+    background: rgba(255, 0, 0, 0.342);
+    backdrop-filter: blur(18px);
+    box-shadow: 0 0 20px rgba(0, 255, 255, 0.3);
+    color: white;
+}
+
+#modalCloseBtn {
+    background: rgba(0, 255, 255, 0.3);
+    border: 1px solid rgba(0, 255, 255, 0.5);
+    color: white;
+}
+
+#modalCloseBtn:hover {
+    background: rgba(0, 255, 255, 0.5);
+}
+
+#themeButtons button {
+    background: rgba(255, 255, 255, 0.1);
+    color: white;
+}
+#themeButtons button:hover {
+    background: rgba(255, 255, 255, 0.25);
+}
